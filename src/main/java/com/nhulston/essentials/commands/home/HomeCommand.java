@@ -4,7 +4,6 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
@@ -16,6 +15,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.nhulston.essentials.managers.HomeManager;
 import com.nhulston.essentials.models.Home;
+import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
 import java.util.Map;
@@ -44,7 +44,7 @@ public class HomeCommand extends AbstractPlayerCommand {
         Map<String, Home> homes = homeManager.getHomes(playerUuid);
 
         if (homes.isEmpty()) {
-            context.sendMessage(Message.raw("You don't have any homes set. Use /sethome to set one."));
+            Msg.fail(context, "You don't have any homes set. Use /sethome to set one.");
             return;
         }
 
@@ -55,7 +55,7 @@ public class HomeCommand extends AbstractPlayerCommand {
             doTeleportToHome(context, store, ref, playerUuid, homeName, homeManager);
         } else {
             // Multiple homes - list them
-            context.sendMessage(Message.raw("Your homes: " + String.join(", ", homes.keySet())));
+            Msg.prefix(context, "Homes", String.join(", ", homes.keySet()));
         }
     }
 
@@ -64,13 +64,13 @@ public class HomeCommand extends AbstractPlayerCommand {
                                  @Nonnull String homeName, @Nonnull HomeManager homeManager) {
         Home home = homeManager.getHome(playerUuid, homeName);
         if (home == null) {
-            context.sendMessage(Message.raw("Home '" + homeName + "' not found."));
+            Msg.fail(context, "Home '" + homeName + "' not found.");
             return;
         }
 
         World targetWorld = Universe.get().getWorld(home.getWorld());
         if (targetWorld == null) {
-            context.sendMessage(Message.raw("World '" + home.getWorld() + "' is not loaded."));
+            Msg.fail(context, "World '" + home.getWorld() + "' is not loaded.");
             return;
         }
 
@@ -80,11 +80,7 @@ public class HomeCommand extends AbstractPlayerCommand {
         Teleport teleport = new Teleport(targetWorld, position, rotation);
         store.putComponent(ref, Teleport.getComponentType(), teleport);
 
-        context.sendMessage(Message.raw(String.format(
-                "Teleported to home '%s' in world %s",
-                homeName,
-                home.getWorld()
-        )));
+        Msg.success(context, String.format("Teleported to home '%s'.", homeName));
     }
 
     // Inner class for /home <name> variant

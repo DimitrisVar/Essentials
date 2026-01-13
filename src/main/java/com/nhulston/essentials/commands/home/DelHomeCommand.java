@@ -2,7 +2,6 @@ package com.nhulston.essentials.commands.home;
 
 import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
@@ -11,6 +10,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.nhulston.essentials.managers.HomeManager;
+import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
 
@@ -37,9 +37,9 @@ public class DelHomeCommand extends AbstractPlayerCommand {
         boolean deleted = homeManager.deleteHome(playerRef.getUuid(), homeName);
 
         if (deleted) {
-            context.sendMessage(Message.raw("Home '" + homeName + "' deleted."));
+            Msg.success(context, "Home '" + homeName + "' deleted.");
         } else {
-            context.sendMessage(Message.raw("Home '" + homeName + "' not found."));
+            Msg.fail(context, "Home '" + homeName + "' not found.");
         }
     }
 }

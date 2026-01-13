@@ -4,7 +4,6 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.math.vector.Vector3f;
-import com.hypixel.hytale.server.core.Message;
 import com.hypixel.hytale.server.core.command.system.CommandContext;
 import com.hypixel.hytale.server.core.command.system.arguments.system.RequiredArg;
 import com.hypixel.hytale.server.core.command.system.arguments.types.ArgTypes;
@@ -15,6 +14,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.nhulston.essentials.managers.HomeManager;
+import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
 
@@ -46,7 +46,7 @@ public class SetHomeCommand extends AbstractPlayerCommand {
                                   @Nonnull World world, @Nonnull String homeName, @Nonnull HomeManager homeManager) {
         TransformComponent transform = store.getComponent(ref, TransformComponent.getComponentType());
         if (transform == null) {
-            context.sendMessage(Message.raw("Could not get your position. Try again."));
+            Msg.fail(context, "Could not get your position. Try again.");
             return;
         }
 
@@ -66,15 +66,11 @@ public class SetHomeCommand extends AbstractPlayerCommand {
         );
 
         if (error != null) {
-            context.sendMessage(Message.raw(error));
+            Msg.fail(context, error);
             return;
         }
 
-        context.sendMessage(Message.raw(String.format(
-                "Home '%s' set in world %s",
-                homeName,
-                world.getName()
-        )));
+        Msg.success(context, String.format("Successfully set home '%s'.", homeName));
     }
 
     // Inner class for /sethome <name> variant
