@@ -2,6 +2,7 @@ package com.nhulston.essentials;
 
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
+import com.nhulston.essentials.commands.home.DelHomeCommand;
 import com.nhulston.essentials.commands.home.HomeCommand;
 import com.nhulston.essentials.commands.home.SetHomeCommand;
 import com.nhulston.essentials.managers.HomeManager;
@@ -51,6 +52,6 @@ public class Essentials extends JavaPlugin {
     private void registerCommands() {
         getCommandRegistry().registerCommand(new SetHomeCommand(homeManager));
         getCommandRegistry().registerCommand(new HomeCommand(homeManager));
-        Log.info("Registered home commands.");
+        getCommandRegistry().registerCommand(new DelHomeCommand(homeManager));
     }
 }
