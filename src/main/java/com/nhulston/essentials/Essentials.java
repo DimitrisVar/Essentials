@@ -3,6 +3,7 @@ package com.nhulston.essentials;
 import com.hypixel.hytale.server.core.plugin.JavaPlugin;
 import com.hypixel.hytale.server.core.plugin.JavaPluginInit;
 import com.nhulston.essentials.commands.back.BackCommand;
+import com.nhulston.essentials.commands.freecam.FreecamCommand;
 import com.nhulston.essentials.commands.heal.HealCommand;
 import com.nhulston.essentials.commands.home.DelHomeCommand;
 import com.nhulston.essentials.commands.home.HomeCommand;
@@ -146,6 +147,9 @@ public class Essentials extends JavaPlugin {
 
         // Heal command
         getCommandRegistry().registerCommand(new HealCommand());
+
+        // Freecam command
+        getCommandRegistry().registerCommand(new FreecamCommand());
     }
 
     private void registerEvents() {
