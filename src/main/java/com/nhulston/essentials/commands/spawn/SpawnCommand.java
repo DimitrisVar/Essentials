@@ -24,6 +24,7 @@ public class SpawnCommand extends AbstractPlayerCommand {
         this.spawnManager = spawnManager;
         this.teleportManager = teleportManager;
 
+        addAliases("s");
         requirePermission("essentials.spawn");
     }
 
