@@ -9,8 +9,10 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayer
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.managers.BackManager;
 import com.nhulston.essentials.managers.TeleportManager;
+import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
@@ -22,11 +24,13 @@ import javax.annotation.Nonnull;
 public class BackCommand extends AbstractPlayerCommand {
     private final BackManager backManager;
     private final TeleportManager teleportManager;
+    private final MessageManager messages;
 
     public BackCommand(@Nonnull BackManager backManager, @Nonnull TeleportManager teleportManager) {
         super("back", "Teleport to your previous location");
         this.backManager = backManager;
         this.teleportManager = teleportManager;
+        this.messages = Essentials.getInstance().getMessageManager();
 
         requirePermission("essentials.back");
     }
@@ -38,7 +42,7 @@ public class BackCommand extends AbstractPlayerCommand {
         BackManager.BackLocation backLocation = backManager.getBackLocation(playerUuid);
 
         if (backLocation == null) {
-            Msg.fail(context, "You have no previous location to return to.");
+            Msg.send(context, messages.get("commands.back.no-location"));
             return;
         }
 
@@ -59,7 +63,7 @@ public class BackCommand extends AbstractPlayerCommand {
             backLocation.getZ(),
             backLocation.getYaw(),
             backLocation.getPitch(),
-            "Teleported to your previous location.",
+            messages.get("commands.back.teleported"),
             () -> backManager.clearBackLocation(playerUuid)
         );
     }

@@ -12,12 +12,15 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.managers.BackManager;
 import com.nhulston.essentials.managers.TeleportManager;
 import com.nhulston.essentials.managers.TpaManager;
+import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
+import java.util.Map;
 
 /**
  * Command to accept a teleport request from another player.
@@ -28,6 +31,7 @@ public class TpacceptCommand extends AbstractPlayerCommand {
     private final TpaManager tpaManager;
     private final TeleportManager teleportManager;
     private final BackManager backManager;
+    private final MessageManager messages;
     private final OptionalArg<String> playerArg;
 
     public TpacceptCommand(@Nonnull TpaManager tpaManager, @Nonnull TeleportManager teleportManager,
@@ -36,6 +40,7 @@ public class TpacceptCommand extends AbstractPlayerCommand {
         this.tpaManager = tpaManager;
         this.teleportManager = teleportManager;
         this.backManager = backManager;
+        this.messages = Essentials.getInstance().getMessageManager();
         this.playerArg = withOptionalArg("player", "Player whose request to accept (defaults to most recent)", ArgTypes.STRING);
 
         addAliases("tpyes");
@@ -53,7 +58,7 @@ public class TpacceptCommand extends AbstractPlayerCommand {
         if (requesterName == null) {
             request = tpaManager.acceptMostRecentRequest(playerRef);
             if (request == null) {
-                Msg.fail(context, "No pending teleport requests.");
+                Msg.send(context, messages.get("commands.tpaccept.no-requests"));
                 return;
             }
             requesterName = request.getRequesterName();
@@ -61,7 +66,7 @@ public class TpacceptCommand extends AbstractPlayerCommand {
             // Accept request from specific player
             request = tpaManager.acceptRequest(playerRef, requesterName);
             if (request == null) {
-                Msg.fail(context, "No pending teleport request from " + requesterName + ".");
+                Msg.send(context, messages.get("commands.tpaccept.no-request-from", Map.of("player", requesterName)));
                 return;
             }
         }
@@ -69,14 +74,14 @@ public class TpacceptCommand extends AbstractPlayerCommand {
         // Get the requester's PlayerRef
         PlayerRef requester = Universe.get().getPlayer(request.getRequesterUuid());
         if (requester == null) {
-            Msg.fail(context, requesterName + " is no longer online.");
+            Msg.send(context, messages.get("commands.tpaccept.player-offline", Map.of("player", requesterName)));
             return;
         }
 
         // Get the requester's entity ref and store
         Ref<EntityStore> requesterRef = requester.getReference();
         if (requesterRef == null || !requesterRef.isValid()) {
-            Msg.fail(context, requesterName + " is no longer available.");
+            Msg.send(context, messages.get("commands.tpaccept.player-unavailable", Map.of("player", requesterName)));
             return;
         }
         Store<EntityStore> requesterStore = requesterRef.getStore();
@@ -85,7 +90,7 @@ public class TpacceptCommand extends AbstractPlayerCommand {
         World requesterWorld = requesterStore.getExternalData().getWorld();
 
         // Notify the target that the request was accepted
-        Msg.success(context, "Teleport request from " + requesterName + " accepted.");
+        Msg.send(context, messages.get("commands.tpaccept.accepted", Map.of("player", requesterName)));
 
         // Save requester's location before teleporting (must be on their world thread)
         requesterWorld.execute(() -> {
@@ -106,7 +111,7 @@ public class TpacceptCommand extends AbstractPlayerCommand {
         teleportManager.queueTeleportToPlayer(
             requester, requesterRef, requesterStore, startPosition,
             playerRef,  // target player
-            "Teleported to " + playerRef.getUsername() + "."
+            messages.get("commands.tpaccept.teleported", Map.of("player", playerRef.getUsername()))
         );
     }
 }

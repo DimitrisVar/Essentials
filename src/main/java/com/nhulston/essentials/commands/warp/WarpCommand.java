@@ -11,10 +11,12 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayer
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.managers.BackManager;
 import com.nhulston.essentials.managers.TeleportManager;
 import com.nhulston.essentials.managers.WarpManager;
 import com.nhulston.essentials.models.Warp;
+import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
@@ -22,11 +24,13 @@ import java.util.Map;
 
 public class WarpCommand extends AbstractPlayerCommand {
     private final WarpManager warpManager;
+    private final MessageManager messages;
 
     public WarpCommand(@Nonnull WarpManager warpManager, @Nonnull TeleportManager teleportManager,
                       @Nonnull BackManager backManager) {
         super("warp", "Teleport to a warp");
         this.warpManager = warpManager;
+        this.messages = Essentials.getInstance().getMessageManager();
 
         requirePermission("essentials.warp");
         addUsageVariant(new WarpNamedCommand(warpManager, teleportManager, backManager));
@@ -39,11 +43,11 @@ public class WarpCommand extends AbstractPlayerCommand {
         Map<String, Warp> warps = warpManager.getWarps();
 
         if (warps.isEmpty()) {
-            Msg.fail(context, "No warps have been set.");
+            Msg.send(context, messages.get("commands.warp.no-warps"));
             return;
         }
 
-        Msg.prefix(context, "Warps", String.join(", ", warps.keySet()));
+        Msg.send(context, messages.get("commands.warp.list-prefix") + ": " + String.join(", ", warps.keySet()));
     }
 
     private static class WarpNamedCommand extends AbstractPlayerCommand {
@@ -66,9 +70,10 @@ public class WarpCommand extends AbstractPlayerCommand {
                                @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
             String warpName = context.get(nameArg);
             Warp warp = warpManager.getWarp(warpName);
+            MessageManager messages = Essentials.getInstance().getMessageManager();
 
             if (warp == null) {
-                Msg.fail(context, "Warp '" + warpName + "' not found.");
+                Msg.send(context, messages.get("commands.warp.not-found", Map.of("warp", warpName)));
                 return;
             }
 
@@ -84,7 +89,7 @@ public class WarpCommand extends AbstractPlayerCommand {
             teleportManager.queueTeleport(
                 playerRef, ref, store, startPosition,
                 warp.getWorld(), warp.getX(), warp.getY(), warp.getZ(), warp.getYaw(), warp.getPitch(),
-                "Teleported to warp '" + warpName + "'"
+                messages.get("commands.warp.teleported", Map.of("warp", warpName))
             );
         }
     }

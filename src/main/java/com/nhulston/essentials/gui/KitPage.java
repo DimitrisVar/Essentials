@@ -26,11 +26,15 @@ import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
 import com.hypixel.hytale.server.core.ui.builder.UIEventBuilder;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.managers.KitManager;
 import com.nhulston.essentials.models.Kit;
 import com.nhulston.essentials.models.KitItem;
 import com.nhulston.essentials.util.CooldownUtil;
+import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
+
+import java.util.Map;
 
 /**
  * A GUI page for selecting kits.
@@ -39,10 +43,12 @@ public class KitPage extends InteractiveCustomUIPage<KitPage.KitPageData> {
     private static final String COOLDOWN_BYPASS_PERMISSION = "essentials.kit.cooldown.bypass";
 
     private final KitManager kitManager;
+    private final MessageManager messages;
 
     public KitPage(@Nonnull PlayerRef playerRef, @Nonnull KitManager kitManager) {
         super(playerRef, CustomPageLifetime.CanDismiss, KitPageData.CODEC);
         this.kitManager = kitManager;
+        this.messages = Essentials.getInstance().getMessageManager();
     }
 
     @Override
@@ -118,7 +124,7 @@ public class KitPage extends InteractiveCustomUIPage<KitPage.KitPageData> {
 
         Kit kit = kitManager.getKit(data.kit);
         if (kit == null) {
-            Msg.fail(playerRef, "Kit not found.");
+            Msg.send(playerRef, messages.get("gui.kit.not-found"));
             this.close();
             return;
         }
@@ -126,7 +132,7 @@ public class KitPage extends InteractiveCustomUIPage<KitPage.KitPageData> {
         // Check permission
         String permission = "essentials.kit." + kit.getId();
         if (!PermissionsModule.get().hasPermission(playerRef.getUuid(), permission)) {
-            Msg.fail(playerRef, "You don't have permission to use this kit.");
+            Msg.send(playerRef, messages.get("gui.kit.no-permission"));
             this.close();
             return;
         }
@@ -136,7 +142,7 @@ public class KitPage extends InteractiveCustomUIPage<KitPage.KitPageData> {
         if (!canBypassCooldown) {
             long remainingCooldown = kitManager.getRemainingCooldown(playerRef.getUuid(), kit.getId());
             if (remainingCooldown > 0) {
-                Msg.fail(playerRef, "This kit is on cooldown. " + CooldownUtil.formatCooldown(remainingCooldown) + " remaining.");
+                Msg.send(playerRef, messages.get("gui.kit.cooldown", Map.of("time", CooldownUtil.formatCooldown(remainingCooldown))));
                 this.close();
                 return;
             }
@@ -145,14 +151,14 @@ public class KitPage extends InteractiveCustomUIPage<KitPage.KitPageData> {
         // Get player inventory
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null) {
-            Msg.fail(playerRef, "Could not access your inventory.");
+            Msg.send(playerRef, messages.get("gui.kit.inventory-error"));
             this.close();
             return;
         }
 
         Inventory inventory = player.getInventory();
         if (inventory == null) {
-            Msg.fail(playerRef, "Could not access your inventory.");
+            Msg.send(playerRef, messages.get("gui.kit.inventory-error"));
             this.close();
             return;
         }
@@ -168,7 +174,7 @@ public class KitPage extends InteractiveCustomUIPage<KitPage.KitPageData> {
             kitManager.setKitUsed(playerRef.getUuid(), kit.getId());
         }
 
-        Msg.success(playerRef, "You received the " + kit.getDisplayName() + " kit!");
+        Msg.send(playerRef, messages.get("gui.kit.received", Map.of("kit", kit.getDisplayName())));
         this.close();
     }
 

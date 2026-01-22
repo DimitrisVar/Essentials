@@ -7,13 +7,16 @@ import com.hypixel.hytale.math.vector.Vector3d;
 import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.util.ConfigManager;
 import com.nhulston.essentials.util.Log;
+import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
 import com.nhulston.essentials.util.TeleportUtil;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -27,10 +30,12 @@ public class TeleportManager {
     private static final double CANCEL_DISTANCE = 2.0;
 
     private final ConfigManager configManager;
+    private final MessageManager messages;
     private final ConcurrentHashMap<UUID, PendingTeleport> pendingTeleports = new ConcurrentHashMap<>();
 
     public TeleportManager(@Nonnull ConfigManager configManager) {
         this.configManager = configManager;
+        this.messages = Essentials.getInstance().getMessageManager();
     }
 
     /**
@@ -59,10 +64,10 @@ public class TeleportManager {
             // Execute immediately
             String error = TeleportUtil.teleportSafe(store, entityRef, worldName, x, y, z, yaw, pitch);
             if (error != null) {
-                Msg.fail(playerRef, error);
+                Msg.send(playerRef, error);
             } else {
                 if (successMessage != null) {
-                    Msg.success(playerRef, successMessage);
+                    Msg.send(playerRef, successMessage);
                 }
                 if (onSuccess != null) {
                     onSuccess.run();
@@ -73,7 +78,7 @@ public class TeleportManager {
 
         // Check if player already has a pending teleport
         if (pendingTeleports.containsKey(playerUuid)) {
-            Msg.fail(playerRef, "You already have a pending teleport. Please wait.");
+            Msg.send(playerRef, messages.get("teleport.already-pending"));
             return;
         }
 
@@ -82,7 +87,7 @@ public class TeleportManager {
         PendingTeleport pending = new PendingTeleport(playerRef, startPosition, destination, successMessage, delay, onSuccess);
         pendingTeleports.put(playerUuid, pending);
 
-        Msg.info(playerRef, "Teleporting in " + delay + " seconds. Don't move!");
+        Msg.send(playerRef, messages.get("teleport.countdown", Map.of("delay", String.valueOf(delay))));
     }
 
     /**
@@ -99,14 +104,14 @@ public class TeleportManager {
             // Execute immediately
             TeleportUtil.teleportToPlayer(playerRef, targetPlayer);
             if (successMessage != null) {
-                Msg.success(playerRef, successMessage);
+                Msg.send(playerRef, successMessage);
             }
             return;
         }
 
         // Check if player already has a pending teleport
         if (pendingTeleports.containsKey(playerUuid)) {
-            Msg.fail(playerRef, "You already have a pending teleport. Please wait.");
+            Msg.send(playerRef, messages.get("teleport.already-pending"));
             return;
         }
 
@@ -115,7 +120,7 @@ public class TeleportManager {
                                                        targetPlayer.getUsername(), successMessage, delay);
         pendingTeleports.put(playerUuid, pending);
 
-        Msg.info(playerRef, "Teleporting in " + delay + " seconds. Don't move!");
+        Msg.send(playerRef, messages.get("teleport.countdown", Map.of("delay", String.valueOf(delay))));
     }
 
     /**
@@ -134,7 +139,7 @@ public class TeleportManager {
         double maxDistanceSquared = CANCEL_DISTANCE * CANCEL_DISTANCE;
 
         if (distanceSquared > maxDistanceSquared) {
-            cancelTeleport(playerUuid, "Teleport canceled because you moved.");
+            cancelTeleport(playerUuid, messages.get("teleport.cancelled-moved"));
             return;
         }
 
@@ -159,7 +164,7 @@ public class TeleportManager {
         buffer.run(store -> {
             try {
                 if (!currentRef.isValid()) {
-                    Msg.fail(pending.getPlayerRef(), "Teleport failed - player reference invalid.");
+                    Msg.send(pending.getPlayerRef(), messages.get("teleport.failed"));
                     return;
                 }
 
@@ -172,7 +177,7 @@ public class TeleportManager {
                         () -> {
                             // Success callback
                             if (pending.getSuccessMessage() != null) {
-                                Msg.success(pending.getPlayerRef(), pending.getSuccessMessage());
+                                Msg.send(pending.getPlayerRef(), pending.getSuccessMessage());
                             }
                             if (pending.getOnSuccess() != null) {
                                 pending.getOnSuccess().run();
@@ -180,7 +185,7 @@ public class TeleportManager {
                         },
                         error -> {
                             // Error callback
-                            Msg.fail(pending.getPlayerRef(), error);
+                            Msg.send(pending.getPlayerRef(), error);
                         }
                     );
                 } else {
@@ -190,10 +195,10 @@ public class TeleportManager {
                             dest.x, dest.y, dest.z, dest.yaw, dest.pitch);
 
                     if (error != null) {
-                        Msg.fail(pending.getPlayerRef(), error);
+                        Msg.send(pending.getPlayerRef(), error);
                     } else {
                         if (pending.getSuccessMessage() != null) {
-                            Msg.success(pending.getPlayerRef(), pending.getSuccessMessage());
+                            Msg.send(pending.getPlayerRef(), pending.getSuccessMessage());
                         }
                         if (pending.getOnSuccess() != null) {
                             pending.getOnSuccess().run();
@@ -202,7 +207,7 @@ public class TeleportManager {
                 }
             } catch (Exception e) {
                 Log.error("Failed to execute teleport for " + playerUuid + ": " + e.getMessage());
-                Msg.fail(pending.getPlayerRef(), "Teleport failed.");
+                Msg.send(pending.getPlayerRef(), messages.get("teleport.failed"));
             }
         });
     }
@@ -213,7 +218,7 @@ public class TeleportManager {
     public void cancelTeleport(@Nonnull UUID playerUuid, @Nullable String reason) {
         PendingTeleport pending = pendingTeleports.remove(playerUuid);
         if (pending != null && reason != null) {
-            Msg.fail(pending.getPlayerRef(), reason);
+            Msg.send(pending.getPlayerRef(), reason);
         }
     }
 

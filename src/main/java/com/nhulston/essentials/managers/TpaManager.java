@@ -2,7 +2,9 @@ package com.nhulston.essentials.managers;
 
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
+import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.util.Log;
+import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
@@ -19,8 +21,13 @@ public class TpaManager {
     // Map of target player UUID -> Map of requester UUID -> request
     private final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, TpaRequest>> pendingRequests = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
+    private final MessageManager messages;
     
     private static final long EXPIRATION_SECONDS = 20;
+    
+    public TpaManager() {
+        this.messages = Essentials.getInstance().getMessageManager();
+    }
 
     /**
      * Creates a teleport request from one player to another.
@@ -148,7 +155,7 @@ public class TpaManager {
             // Notify the requester that their request expired
             PlayerRef requester = Universe.get().getPlayer(requesterUuid);
             if (requester != null) {
-                Msg.fail(requester, "Your teleport request to " + request.getTargetName() + " has expired.");
+                Msg.send(requester, messages.get("tpa.request-expired", Map.of("player", request.getTargetName())));
             }
         }
     }

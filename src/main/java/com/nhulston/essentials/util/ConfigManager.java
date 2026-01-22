@@ -6,20 +6,11 @@ import org.tomlj.TomlTable;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
-import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 public class ConfigManager {
@@ -97,24 +88,13 @@ public class ConfigManager {
 
     private void load() {
         if (!Files.exists(configPath)) {
-            createDefault();
+            TomlMigrationHelper.createDefault(configPath, "config.toml");
         } else {
-            // Check for missing sections and add them
-            migrateConfig();
+            TomlMigrationHelper.migrateToml(configPath, "config.toml");
         }
 
         try {
-            // Read file as bytes first to handle potential BOM
-            byte[] bytes = Files.readAllBytes(configPath);
-            String configContent;
-            
-            // Check for UTF-8 BOM and skip it if present
-            if (bytes.length >= 3 && bytes[0] == (byte) 0xEF && bytes[1] == (byte) 0xBB && bytes[2] == (byte) 0xBF) {
-                configContent = new String(bytes, 3, bytes.length - 3, StandardCharsets.UTF_8);
-            } else {
-                configContent = new String(bytes, StandardCharsets.UTF_8);
-            }
-            
+            String configContent = TomlMigrationHelper.readWithBom(configPath);
             TomlParseResult config = Toml.parse(configContent);
 
             if (config.hasErrors()) {
@@ -234,181 +214,12 @@ public class ConfigManager {
      * Migrates the user's config by adding any missing sections from the default config.
      * Preserves user's existing values and comments.
      */
-    private void migrateConfig() {
-        String defaultConfig = loadDefaultConfigFromResources();
-        if (defaultConfig == null) {
-            Log.warning("Could not load default config from resources for migration.");
-            return;
-        }
-
-        try {
-            // Read user config as bytes first to handle potential BOM
-            byte[] bytes = Files.readAllBytes(configPath);
-            String userConfig;
-            
-            // Check for UTF-8 BOM and skip it if present
-            if (bytes.length >= 3 && bytes[0] == (byte) 0xEF && bytes[1] == (byte) 0xBB && bytes[2] == (byte) 0xBF) {
-                userConfig = new String(bytes, 3, bytes.length - 3, StandardCharsets.UTF_8);
-            } else {
-                userConfig = new String(bytes, StandardCharsets.UTF_8);
-            }
-            
-            // Find sections in both configs
-            Set<String> userSections = findTopLevelSections(userConfig);
-            Map<String, String> defaultSections = extractSections(defaultConfig);
-            
-            // Find missing sections
-            List<String> missingSections = new ArrayList<>();
-            for (String section : defaultSections.keySet()) {
-                if (!userSections.contains(section)) {
-                    missingSections.add(section);
-                }
-            }
-            
-            if (missingSections.isEmpty()) {
-                return;
-            }
-            
-            // Append missing sections to user config
-            StringBuilder newConfig = new StringBuilder(userConfig);
-            if (!userConfig.endsWith("\n")) {
-                newConfig.append("\n");
-            }
-            
-            for (String section : missingSections) {
-                newConfig.append("\n");
-                newConfig.append(defaultSections.get(section));
-                Log.info("Added missing config section: [" + section + "]");
-            }
-            
-            Files.writeString(configPath, newConfig.toString(), StandardCharsets.UTF_8);
-            Log.info("Config migrated with " + missingSections.size() + " new section(s).");
-            
-        } catch (Exception e) {
-            Log.warning("Config migration skipped: " + e.getClass().getName() + " - " + e.getMessage());
-        }
-    }
-
-    /**
-     * Loads the default config.toml content from resources.
-     */
-    @Nullable
-    private String loadDefaultConfigFromResources() {
-        try (InputStream is = getClass().getClassLoader().getResourceAsStream("config.toml")) {
-            if (is == null) {
-                return null;
-            }
-            try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                StringBuilder sb = new StringBuilder();
-                String line;
-                while ((line = reader.readLine()) != null) {
-                    sb.append(line).append("\n");
-                }
-                return sb.toString();
-            }
-        } catch (IOException e) {
-            Log.warning("Failed to load default config from resources: " + e.getMessage());
-            return null;
-        }
-    }
-
-    /**
-     * Finds all section names in a TOML config string.
-     * Matches [section] and [section.subsection].
-     */
-    @Nonnull
-    private Set<String> findTopLevelSections(@Nonnull String config) {
-        LinkedHashMap<String, Boolean> map = new LinkedHashMap<>();
-        
-        for (String line : config.split("\n")) {
-            Matcher matcher = SECTION_PATTERN.matcher(line.trim());
-            if (matcher.matches()) {
-                map.put(matcher.group(1), true);
-            }
-        }
-        
-        return map.keySet();
-    }
-
-    /**
-     * Extracts all sections from a TOML config string.
-     * Returns a map of section name -> full section content (including header, comments, and values).
-     */
-    @Nonnull
-    private Map<String, String> extractSections(@Nonnull String config) {
-        Map<String, String> sections = new LinkedHashMap<>();
-        String[] lines = config.split("\n");
-        
-        String currentSection = null;
-        StringBuilder currentContent = new StringBuilder();
-        List<String> pendingComments = new ArrayList<>();
-        
-        for (String line : lines) {
-            Matcher matcher = SECTION_PATTERN.matcher(line.trim());
-            
-            if (matcher.matches()) {
-                // Save previous section
-                if (currentSection != null) {
-                    sections.put(currentSection, currentContent.toString());
-                }
-                
-                // Start new section
-                currentSection = matcher.group(1);
-                currentContent = new StringBuilder();
-                
-                // Add any pending comments (comments before this section header)
-                for (String comment : pendingComments) {
-                    currentContent.append(comment).append("\n");
-                }
-                pendingComments.clear();
-                
-                currentContent.append(line).append("\n");
-            } else if (currentSection != null) {
-                // Add line to current section
-                currentContent.append(line).append("\n");
-            } else {
-                // Lines before any section (could be comments for first section)
-                if (line.trim().startsWith("#") || line.trim().isEmpty()) {
-                    pendingComments.add(line);
-                }
-            }
-        }
-        
-        // Save last section
-        if (currentSection != null) {
-            sections.put(currentSection, currentContent.toString());
-        }
-        
-        return sections;
-    }
-
-    /**
-     * Safely gets an integer value from the config, with fallback to default.
-     */
     private int getIntSafe(@Nonnull TomlParseResult config, @Nonnull String key, int defaultValue) {
         try {
             Long value = config.getLong(key);
             return value != null ? Math.toIntExact(value) : defaultValue;
         } catch (Exception e) {
             return defaultValue;
-        }
-    }
-
-    private void createDefault() {
-        try {
-            Files.createDirectories(configPath.getParent());
-
-            try (InputStream is = getClass().getClassLoader().getResourceAsStream("config.toml")) {
-                if (is != null) {
-                    Files.copy(is, configPath);
-                    Log.info("Created default config.");
-                    return;
-                }
-            }
-
-            Log.error("Could not find config.toml in resources.");
-        } catch (IOException e) {
-            Log.error("Failed to create default config: " + e.getMessage());
         }
     }
 

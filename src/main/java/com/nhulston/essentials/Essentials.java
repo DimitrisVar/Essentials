@@ -49,8 +49,9 @@ import com.nhulston.essentials.managers.TeleportManager;
 import com.nhulston.essentials.managers.TpaManager;
 import com.nhulston.essentials.managers.WarpManager;
 import com.nhulston.essentials.util.ConfigManager;
-import com.nhulston.essentials.util.StorageManager;
 import com.nhulston.essentials.util.Log;
+import com.nhulston.essentials.util.MessageManager;
+import com.nhulston.essentials.util.StorageManager;
 import com.nhulston.essentials.util.VersionChecker;
 
 import javax.annotation.Nonnull;
@@ -72,6 +73,7 @@ public class Essentials extends JavaPlugin {
     private KitManager kitManager;
     private BackManager backManager;
     private VersionChecker versionChecker;
+    private MessageManager messageManager;
 
     public Essentials(@Nonnull JavaPluginInit init) {
         super(init);
@@ -84,6 +86,7 @@ public class Essentials extends JavaPlugin {
         Log.info("Essentials is starting...");
 
         configManager = new ConfigManager(getDataDirectory());
+        messageManager = new MessageManager(getDataDirectory());
         storageManager = new StorageManager(getDataDirectory());
 
         homeManager = new HomeManager(storageManager, configManager);
@@ -239,7 +242,16 @@ public class Essentials extends JavaPlugin {
      */
     public void reloadConfigs() {
         configManager.reload();
+        messageManager.reload();
         kitManager.reload();
         Log.info("All configurations reloaded.");
+    }
+
+    /**
+     * Gets the message manager.
+     */
+    @Nonnull
+    public MessageManager getMessageManager() {
+        return messageManager;
     }
 }

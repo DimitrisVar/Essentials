@@ -9,10 +9,12 @@ import com.hypixel.hytale.server.core.command.system.basecommands.AbstractPlayer
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.managers.BackManager;
 import com.nhulston.essentials.managers.SpawnManager;
 import com.nhulston.essentials.managers.TeleportManager;
 import com.nhulston.essentials.models.Spawn;
+import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
@@ -21,6 +23,7 @@ public class SpawnCommand extends AbstractPlayerCommand {
     private final SpawnManager spawnManager;
     private final TeleportManager teleportManager;
     private final BackManager backManager;
+    private final MessageManager messages;
 
     public SpawnCommand(@Nonnull SpawnManager spawnManager, @Nonnull TeleportManager teleportManager,
                        @Nonnull BackManager backManager) {
@@ -28,6 +31,7 @@ public class SpawnCommand extends AbstractPlayerCommand {
         this.spawnManager = spawnManager;
         this.teleportManager = teleportManager;
         this.backManager = backManager;
+        this.messages = Essentials.getInstance().getMessageManager();
 
         addAliases("s");
         requirePermission("essentials.spawn");
@@ -39,7 +43,7 @@ public class SpawnCommand extends AbstractPlayerCommand {
         Spawn spawn = spawnManager.getSpawn();
 
         if (spawn == null) {
-            Msg.fail(context, "Spawn has not been set.");
+            Msg.send(context, messages.get("commands.spawn.not-set"));
             return;
         }
 
@@ -55,7 +59,7 @@ public class SpawnCommand extends AbstractPlayerCommand {
         teleportManager.queueTeleport(
             playerRef, ref, store, startPosition,
             spawn.getWorld(), spawn.getX(), spawn.getY(), spawn.getZ(), spawn.getYaw(), spawn.getPitch(),
-            "Teleported to spawn."
+            messages.get("commands.spawn.teleported")
         );
     }
 }

@@ -8,6 +8,7 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.nhulston.essentials.Essentials;
+import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
@@ -18,9 +19,11 @@ import javax.annotation.Nonnull;
  * Requires: essentials.reload permission
  */
 public class EssentialsReloadCommand extends AbstractPlayerCommand {
+    private final MessageManager messages;
 
     public EssentialsReloadCommand() {
         super("reload", "Reload EssentialsCore configuration");
+        this.messages = Essentials.getInstance().getMessageManager();
 
         requirePermission("essentials.reload");
     }
@@ -29,6 +32,6 @@ public class EssentialsReloadCommand extends AbstractPlayerCommand {
     protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store,
                            @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
         Essentials.getInstance().reloadConfigs();
-        Msg.success(context, "Configuration reloaded.");
+        Msg.send(context, messages.get("commands.essentials.reload.success"));
     }
 }

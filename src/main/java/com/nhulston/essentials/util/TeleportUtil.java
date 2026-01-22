@@ -16,10 +16,12 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.chunk.WorldChunk;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 
+import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.models.Spawn;
 
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public final class TeleportUtil {
@@ -96,7 +98,8 @@ public final class TeleportUtil {
                                   float yaw, float pitch) {
         World targetWorld = Universe.get().getWorld(worldName);
         if (targetWorld == null) {
-            return "World '" + worldName + "' is not loaded.";
+            MessageManager messages = Essentials.getInstance().getMessageManager();
+            return messages.get("teleport.world-not-loaded", Map.of("world", worldName));
         }
 
         Vector3d position = new Vector3d(x, y, z);
@@ -120,7 +123,8 @@ public final class TeleportUtil {
                                       float yaw, float pitch) {
         World targetWorld = Universe.get().getWorld(worldName);
         if (targetWorld == null) {
-            return "World '" + worldName + "' is not loaded.";
+            MessageManager messages = Essentials.getInstance().getMessageManager();
+            return messages.get("teleport.world-not-loaded", Map.of("world", worldName));
         }
 
         // Find safe Y position

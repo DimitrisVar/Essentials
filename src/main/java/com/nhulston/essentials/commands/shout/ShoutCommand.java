@@ -8,8 +8,10 @@ import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.util.ColorUtil;
 import com.nhulston.essentials.util.ConfigManager;
+import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
@@ -21,10 +23,12 @@ import javax.annotation.Nonnull;
  */
 public class ShoutCommand extends AbstractPlayerCommand {
     private final ConfigManager configManager;
+    private final MessageManager messages;
 
     public ShoutCommand(@Nonnull ConfigManager configManager) {
         super("shout", "Broadcast a message to all players");
         this.configManager = configManager;
+        this.messages = Essentials.getInstance().getMessageManager();
 
         addAliases("broadcast");
         requirePermission("essentials.shout");
@@ -41,7 +45,7 @@ public class ShoutCommand extends AbstractPlayerCommand {
         String[] parts = rawInput.split("\\s+", 2); // Split into [command, message]
         
         if (parts.length < 2) {
-            Msg.fail(context, "Usage: /shout <message>");
+            Msg.send(context, messages.get("commands.shout.usage"));
             return;
         }
         

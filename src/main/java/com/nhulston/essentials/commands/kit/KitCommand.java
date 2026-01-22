@@ -8,8 +8,10 @@ import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
+import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.gui.KitPage;
 import com.nhulston.essentials.managers.KitManager;
+import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
 
 import javax.annotation.Nonnull;
@@ -22,11 +24,13 @@ import javax.annotation.Nonnull;
  */
 public class KitCommand extends AbstractPlayerCommand {
     private final KitManager kitManager;
+    private final MessageManager messages;
 
     public KitCommand(@Nonnull KitManager kitManager) {
         super("kit", "Open the kit selection menu");
         this.addAliases("kits");
         this.kitManager = kitManager;
+        this.messages = Essentials.getInstance().getMessageManager();
 
         requirePermission("essentials.kit");
         
@@ -41,7 +45,7 @@ public class KitCommand extends AbstractPlayerCommand {
         // Get the Player component to access PageManager
         Player player = store.getComponent(ref, Player.getComponentType());
         if (player == null) {
-            Msg.fail(context, "Could not get player component.");
+            Msg.send(context, messages.get("commands.kit.player-error"));
             return;
         }
 
