@@ -42,6 +42,12 @@ public class TphereCommand extends AbstractPlayerCommand {
             return;
         }
 
+        Ref<EntityStore> targetRef = target.getReference();
+        if (targetRef == null || !targetRef.isValid()) {
+            Msg.send(context, messages.get("commands.tphere.player-not-found"));
+            return;
+        }
+
         if (target.getUuid().equals(playerRef.getUuid())) {
             Msg.send(context, messages.get("commands.tphere.cannot-self"));
             return;

@@ -76,16 +76,15 @@ public class TeleportManager {
             return;
         }
 
-        // Check if player already has a pending teleport
-        if (pendingTeleports.containsKey(playerUuid)) {
+        // Create pending teleport and add atomically
+        TeleportDestination destination = new TeleportDestination(worldName, x, y, z, yaw, pitch);
+        PendingTeleport pending = new PendingTeleport(playerRef, startPosition, destination, successMessage, delay, onSuccess);
+        PendingTeleport existing = pendingTeleports.putIfAbsent(playerUuid, pending);
+        
+        if (existing != null) {
             Msg.send(playerRef, messages.get("teleport.already-pending"));
             return;
         }
-
-        // Create pending teleport
-        TeleportDestination destination = new TeleportDestination(worldName, x, y, z, yaw, pitch);
-        PendingTeleport pending = new PendingTeleport(playerRef, startPosition, destination, successMessage, delay, onSuccess);
-        pendingTeleports.put(playerUuid, pending);
 
         Msg.send(playerRef, messages.get("teleport.countdown", Map.of("delay", String.valueOf(delay))));
     }
@@ -109,16 +108,15 @@ public class TeleportManager {
             return;
         }
 
-        // Check if player already has a pending teleport
-        if (pendingTeleports.containsKey(playerUuid)) {
+        // Create pending teleport with target player UUID and add atomically
+        PendingTeleport pending = new PendingTeleport(playerRef, startPosition, targetPlayer.getUuid(), 
+                                                       targetPlayer.getUsername(), successMessage, delay);
+        PendingTeleport existing = pendingTeleports.putIfAbsent(playerUuid, pending);
+        
+        if (existing != null) {
             Msg.send(playerRef, messages.get("teleport.already-pending"));
             return;
         }
-
-        // Create pending teleport with target player UUID
-        PendingTeleport pending = new PendingTeleport(playerRef, startPosition, targetPlayer.getUuid(), 
-                                                       targetPlayer.getUsername(), successMessage, delay);
-        pendingTeleports.put(playerUuid, pending);
 
         Msg.send(playerRef, messages.get("teleport.countdown", Map.of("delay", String.valueOf(delay))));
     }

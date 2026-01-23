@@ -28,15 +28,15 @@ public class BackManager {
     public void setBackLocation(@Nonnull UUID playerUuid, @Nonnull String worldName,
                                 double x, double y, double z, float yaw, float pitch,
                                 @Nonnull BackLocationType type) {
-        BackLocation existing = backLocations.get(playerUuid);
-        
-        // If existing location is DEATH and new is TELEPORT, don't overwrite
-        if (existing != null && existing.getType() == BackLocationType.DEATH 
-            && type == BackLocationType.TELEPORT) {
-            return;
-        }
-        
-        backLocations.put(playerUuid, new BackLocation(worldName, x, y, z, yaw, pitch, type));
+        // Use compute for atomic check-and-update
+        backLocations.compute(playerUuid, (_, existing) -> {
+            // If existing location is DEATH and new is TELEPORT, don't overwrite
+            if (existing != null && existing.getType() == BackLocationType.DEATH 
+                && type == BackLocationType.TELEPORT) {
+                return existing;
+            }
+            return new BackLocation(worldName, x, y, z, yaw, pitch, type);
+        });
     }
 
     /**

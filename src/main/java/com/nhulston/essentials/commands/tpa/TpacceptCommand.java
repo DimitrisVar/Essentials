@@ -92,7 +92,7 @@ public class TpacceptCommand extends AbstractPlayerCommand {
         // Notify the target that the request was accepted
         Msg.send(context, messages.get("commands.tpaccept.accepted", Map.of("player", requesterName)));
 
-        // Save requester's location before teleporting (must be on their world thread)
+        // Save requester's location and queue teleport (must be on their world thread)
         requesterWorld.execute(() -> {
             if (!requesterRef.isValid()) {
                 return;
@@ -103,15 +103,15 @@ public class TpacceptCommand extends AbstractPlayerCommand {
             backManager.setTeleportLocation(requester.getUuid(), requesterWorld.getName(),
                 currentPos.getX(), currentPos.getY(), currentPos.getZ(),
                 currentRot.getY(), currentRot.getX());
-        });
 
-        // Queue the teleport for the requester (they need to stand still)
-        Vector3d startPosition = requester.getTransform().getPosition();
-        
-        teleportManager.queueTeleportToPlayer(
-            requester, requesterRef, requesterStore, startPosition,
-            playerRef,  // target player
-            messages.get("commands.tpaccept.teleported", Map.of("player", playerRef.getUsername()))
-        );
+            // Queue the teleport (startPosition must be captured on requester's world thread)
+            Vector3d startPosition = currentPos.clone();
+            
+            teleportManager.queueTeleportToPlayer(
+                requester, requesterRef, requesterStore, startPosition,
+                playerRef,  // target player
+                messages.get("commands.tpaccept.teleported", Map.of("player", playerRef.getUsername()))
+            );
+        });
     }
 }

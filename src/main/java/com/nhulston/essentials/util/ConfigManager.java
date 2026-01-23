@@ -8,9 +8,8 @@ import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 
 public class ConfigManager {
@@ -25,64 +24,64 @@ public class ConfigManager {
     private final Path configPath;
 
     // Home limits by permission tier (e.g., essentials.homes.default -> 5)
-    private final HashMap<String, Integer> homeLimits = new HashMap<>();
+    private final ConcurrentHashMap<String, Integer> homeLimits = new ConcurrentHashMap<>();
 
     // Chat settings
-    private boolean chatEnabled = true;
-    private String chatFallbackFormat = DEFAULT_CHAT_FORMAT;
-    private final LinkedHashMap<String, String> chatFormats = new LinkedHashMap<>();
+    private volatile boolean chatEnabled = true;
+    private volatile String chatFallbackFormat = DEFAULT_CHAT_FORMAT;
+    private final ConcurrentHashMap<String, String> chatFormats = new ConcurrentHashMap<>();
 
     // Build settings
-    private boolean disableBuilding = false;
+    private volatile boolean disableBuilding = false;
 
     // Spawn settings
-    private boolean firstJoinSpawnEnabled = true;
-    private boolean everyJoinSpawnEnabled = false;
-    private boolean deathSpawnEnabled = true;
+    private volatile boolean firstJoinSpawnEnabled = true;
+    private volatile boolean everyJoinSpawnEnabled = false;
+    private volatile boolean deathSpawnEnabled = true;
 
     // Teleport settings
-    private int teleportDelay = DEFAULT_TELEPORT_DELAY;
+    private volatile int teleportDelay = DEFAULT_TELEPORT_DELAY;
 
     // TPA settings
-    private int tpaExpiration = 60;
+    private volatile int tpaExpiration = 60;
 
     // Spawn protection settings
-    private boolean spawnProtectionEnabled = true;
-    private int spawnProtectionRadius = DEFAULT_SPAWN_PROTECTION_RADIUS;
-    private int spawnProtectionMinY = -1;
-    private int spawnProtectionMaxY = -1;
-    private boolean spawnProtectionInvulnerable = true;
-    private boolean spawnProtectionShowTitles = true;
-    private String spawnProtectionEnterTitle = "Entering Spawn";
-    private String spawnProtectionEnterSubtitle = "This is a protected area";
-    private String spawnProtectionExitTitle = "Leaving Spawn";
-    private String spawnProtectionExitSubtitle = "You can now build";
+    private volatile boolean spawnProtectionEnabled = true;
+    private volatile int spawnProtectionRadius = DEFAULT_SPAWN_PROTECTION_RADIUS;
+    private volatile int spawnProtectionMinY = -1;
+    private volatile int spawnProtectionMaxY = -1;
+    private volatile boolean spawnProtectionInvulnerable = true;
+    private volatile boolean spawnProtectionShowTitles = true;
+    private volatile String spawnProtectionEnterTitle = "Entering Spawn";
+    private volatile String spawnProtectionEnterSubtitle = "This is a protected area";
+    private volatile String spawnProtectionExitTitle = "Leaving Spawn";
+    private volatile String spawnProtectionExitSubtitle = "You can now build";
 
     // RTP settings
-    private int rtpCooldown = DEFAULT_RTP_COOLDOWN;
-    private String rtpDefaultWorld = "default";
-    private final HashMap<String, Integer> rtpWorlds = new HashMap<>();
+    private volatile int rtpCooldown = DEFAULT_RTP_COOLDOWN;
+    private volatile String rtpDefaultWorld = "default";
+    private final ConcurrentHashMap<String, Integer> rtpWorlds = new ConcurrentHashMap<>();
 
     // MOTD settings
-    private boolean motdEnabled = true;
-    private String motdMessage = "&6Welcome to the server, &e%player%&6!";
+    private volatile boolean motdEnabled = true;
+    private volatile String motdMessage = "&6Welcome to the server, &e%player%&6!";
 
     // Sleep settings
-    private boolean sleepEnabled = true;
-    private int sleepPercentage = 20;
+    private volatile boolean sleepEnabled = true;
+    private volatile int sleepPercentage = 20;
 
     // Shout settings
-    private String shoutPrefix = "&0[&7Broadcast&0] &f";
+    private volatile String shoutPrefix = "&0[&7Broadcast&0] &f";
 
     // Repair settings
-    private int repairCooldown = 43200;
+    private volatile int repairCooldown = 43200;
 
     // Join/Leave message settings
-    private boolean joinMessageEnabled = true;
-    private String joinMessage = "&e%player% &ajoined the game";
-    private String firstJoinMessage = "&e%player% &6joined the game for the first time!";
-    private boolean leaveMessageEnabled = true;
-    private String leaveMessage = "&e%player% &cleft the game";
+    private volatile boolean joinMessageEnabled = true;
+    private volatile String joinMessage = "&e%player% &ajoined the game";
+    private volatile String firstJoinMessage = "&e%player% &6joined the game for the first time!";
+    private volatile boolean leaveMessageEnabled = true;
+    private volatile String leaveMessage = "&e%player% &cleft the game";
 
     public ConfigManager(@Nonnull Path dataFolder) {
         this.configPath = dataFolder.resolve("config.toml");
