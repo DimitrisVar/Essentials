@@ -94,7 +94,7 @@ public class Essentials extends JavaPlugin {
         spawnManager = new SpawnManager(storageManager);
         chatManager = new ChatManager(configManager);
         spawnProtectionManager = new SpawnProtectionManager(configManager, storageManager);
-        tpaManager = new TpaManager();
+        tpaManager = new TpaManager(configManager);
         teleportManager = new TeleportManager(configManager);
         kitManager = new KitManager(getDataDirectory(), storageManager);
         backManager = new BackManager();

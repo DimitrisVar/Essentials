@@ -43,6 +43,9 @@ public class ConfigManager {
     // Teleport settings
     private int teleportDelay = DEFAULT_TELEPORT_DELAY;
 
+    // TPA settings
+    private int tpaExpiration = 60;
+
     // Spawn protection settings
     private boolean spawnProtectionEnabled = true;
     private int spawnProtectionRadius = DEFAULT_SPAWN_PROTECTION_RADIUS;
@@ -141,6 +144,9 @@ public class ConfigManager {
 
             // Teleport config
             teleportDelay = getIntSafe(config, "teleport.delay", DEFAULT_TELEPORT_DELAY);
+
+            // TPA config
+            tpaExpiration = getIntSafe(config, "tpa.expiration", 60);
 
             // Spawn protection config
             spawnProtectionEnabled = config.getBoolean("spawn-protection.enabled", () -> true);
@@ -263,6 +269,10 @@ public class ConfigManager {
 
     public int getTeleportDelay() {
         return teleportDelay;
+    }
+
+    public int getTpaExpiration() {
+        return tpaExpiration;
     }
 
     public boolean isSpawnProtectionEnabled() {

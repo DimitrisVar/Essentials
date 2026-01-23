@@ -47,6 +47,11 @@ disable-building = false
 # Players with essentials.teleport.bypass permission skip the delay.
 delay = 3
 
+[tpa]
+# Time (in seconds) before a TPA request expires
+# After this time, the request is automatically canceled
+expiration = 60
+
 [spawn]
 # This section requires a spawn to be set with /setspawn
 

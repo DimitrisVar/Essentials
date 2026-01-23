@@ -3,6 +3,7 @@ package com.nhulston.essentials.managers;
 import com.hypixel.hytale.server.core.universe.PlayerRef;
 import com.hypixel.hytale.server.core.universe.Universe;
 import com.nhulston.essentials.Essentials;
+import com.nhulston.essentials.util.ConfigManager;
 import com.nhulston.essentials.util.Log;
 import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
@@ -22,11 +23,11 @@ public class TpaManager {
     private final ConcurrentHashMap<UUID, ConcurrentHashMap<UUID, TpaRequest>> pendingRequests = new ConcurrentHashMap<>();
     private final ScheduledExecutorService scheduler = Executors.newSingleThreadScheduledExecutor();
     private final MessageManager messages;
+    private final ConfigManager configManager;
     
-    private static final long EXPIRATION_SECONDS = 20;
-    
-    public TpaManager() {
+    public TpaManager(ConfigManager configManager) {
         this.messages = Essentials.getInstance().getMessageManager();
+        this.configManager = configManager;
     }
 
     /**
@@ -54,9 +55,10 @@ public class TpaManager {
         targetRequests.put(requesterUuid, request);
         
         // Schedule expiration
+        long expirationSeconds = configManager.getTpaExpiration();
         ScheduledFuture<?> future = scheduler.schedule(() -> {
             expireRequest(targetUuid, requesterUuid);
-        }, EXPIRATION_SECONDS, TimeUnit.SECONDS);
+        }, expirationSeconds, TimeUnit.SECONDS);
         request.setExpirationFuture(future);
         
         Log.info("TPA request created: " + requester.getUsername() + " -> " + target.getUsername());
