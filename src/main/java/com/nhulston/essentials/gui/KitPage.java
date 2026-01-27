@@ -2,9 +2,9 @@ package com.nhulston.essentials.gui;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.annotation.Nonnull;
-import javax.annotation.Nullable;
 
 import com.hypixel.hytale.codec.Codec;
 import com.hypixel.hytale.codec.KeyedCodec;
@@ -13,13 +13,9 @@ import com.hypixel.hytale.component.Ref;
 import com.hypixel.hytale.component.Store;
 import com.hypixel.hytale.protocol.packets.interface_.CustomPageLifetime;
 import com.hypixel.hytale.protocol.packets.interface_.CustomUIEventBindingType;
-import com.hypixel.hytale.server.core.entity.ItemUtils;
 import com.hypixel.hytale.server.core.entity.entities.Player;
 import com.hypixel.hytale.server.core.entity.entities.player.pages.InteractiveCustomUIPage;
 import com.hypixel.hytale.server.core.inventory.Inventory;
-import com.hypixel.hytale.server.core.inventory.ItemStack;
-import com.hypixel.hytale.server.core.inventory.container.ItemContainer;
-import com.hypixel.hytale.server.core.inventory.transaction.ItemStackTransaction;
 import com.hypixel.hytale.server.core.permissions.PermissionsModule;
 import com.hypixel.hytale.server.core.ui.builder.EventData;
 import com.hypixel.hytale.server.core.ui.builder.UICommandBuilder;
@@ -29,13 +25,10 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.managers.KitManager;
 import com.nhulston.essentials.models.Kit;
-import com.nhulston.essentials.models.KitItem;
+import com.nhulston.essentials.util.ConfigManager;
 import com.nhulston.essentials.util.CooldownUtil;
-import com.nhulston.essentials.util.Log;
 import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
-
-import java.util.Map;
 
 /**
  * A GUI page for selecting kits.
@@ -44,11 +37,13 @@ public class KitPage extends InteractiveCustomUIPage<KitPage.KitPageData> {
     private static final String COOLDOWN_BYPASS_PERMISSION = "essentials.kit.cooldown.bypass";
 
     private final KitManager kitManager;
+    private final ConfigManager configManager;
     private final MessageManager messages;
 
-    public KitPage(@Nonnull PlayerRef playerRef, @Nonnull KitManager kitManager) {
+    public KitPage(@Nonnull PlayerRef playerRef, @Nonnull KitManager kitManager, @Nonnull ConfigManager configManager) {
         super(playerRef, CustomPageLifetime.CanDismiss, KitPageData.CODEC);
         this.kitManager = kitManager;
+        this.configManager = configManager;
         this.messages = Essentials.getInstance().getMessageManager();
     }
 
@@ -58,6 +53,15 @@ public class KitPage extends InteractiveCustomUIPage<KitPage.KitPageData> {
         commandBuilder.append("Pages/Essentials_KitPage.ui");
 
         List<Kit> allKits = new ArrayList<>(kitManager.getKits());
+        
+        // Filter out starter kit if configured
+        if (configManager.isStarterKitEnabled()) {
+            String starterKitName = configManager.getStarterKitName();
+            if (!starterKitName.isEmpty()) {
+                allKits.removeIf(kit -> kit.getId().equalsIgnoreCase(starterKitName));
+            }
+        }
+        
         if (allKits.isEmpty()) {
             // No kits available - could add a "No kits available" message element
             return;
@@ -165,7 +169,7 @@ public class KitPage extends InteractiveCustomUIPage<KitPage.KitPageData> {
         }
 
         // Apply kit (overflow items will be dropped on the ground)
-        applyKit(kit, inventory, ref, store);
+        KitManager.applyKit(kit, inventory, ref, store);
 
         // Sync inventory changes to client
         player.sendInventory();
@@ -177,81 +181,6 @@ public class KitPage extends InteractiveCustomUIPage<KitPage.KitPageData> {
 
         Msg.send(playerRef, messages.get("gui.kit.received", Map.of("kit", kit.getDisplayName())));
         this.close();
-    }
-
-    /**
-     * Applies a kit to the player's inventory. Overflow items are dropped on the ground.
-     */
-    private void applyKit(@Nonnull Kit kit, @Nonnull Inventory inventory,
-                          @Nonnull Ref<EntityStore> ref, @Nonnull Store<EntityStore> store) {
-        // Clear inventory if replace mode
-        if (kit.isReplaceMode()) {
-            inventory.clear();
-        }
-
-        // Add items to inventory
-        for (KitItem kitItem : kit.getItems()) {
-            try {
-                ItemStack itemStack = new ItemStack(kitItem.itemId(), kitItem.quantity());
-                ItemStack remainder = addItemWithOverflow(inventory, kitItem, itemStack);
-                
-                // Drop any overflow items on the ground
-                if (remainder != null && !remainder.isEmpty()) {
-                    ItemUtils.dropItem(ref, remainder, store);
-                }
-            } catch (Exception e) {
-                // Log warning for invalid item IDs (e.g., item doesn't exist in registry)
-                Log.warning("Kit '" + kit.getId() + "' contains invalid item: " + kitItem.itemId() + " - " + e.getMessage());
-            }
-        }
-    }
-
-    /**
-     * Adds an item to inventory and returns any remainder that couldn't fit
-     */
-    @Nullable
-    private ItemStack addItemWithOverflow(@Nonnull Inventory inventory, @Nonnull KitItem kitItem, @Nonnull ItemStack itemStack) {
-        ItemContainer container = getContainerBySection(inventory, kitItem.section());
-        
-        if (container != null) {
-            // Try to add to specific slot first
-            short slot = (short) kitItem.slot();
-            if (slot >= 0 && slot < container.getCapacity()) {
-                ItemStack existing = container.getItemStack(slot);
-                if (existing == null || existing.isEmpty()) {
-                    container.setItemStackForSlot(slot, itemStack);
-                    return null;
-                }
-            }
-            // Slot occupied or invalid - for armor/utility/tools, fall back to hotbar/storage
-            // (these containers don't support arbitrary item placement like hotbar/storage do)
-            String section = kitItem.section().toLowerCase();
-            if (section.equals("armor") || section.equals("utility") || section.equals("tools")) {
-                ItemStackTransaction transaction = inventory.getCombinedHotbarFirst().addItemStack(itemStack);
-                return transaction.getRemainder();
-            }
-            // For hotbar/storage, try adding anywhere in that container
-            ItemStackTransaction transaction = container.addItemStack(itemStack);
-            return transaction.getRemainder();
-        } else {
-            // Unknown section, try adding to combined hotbar/storage
-            ItemStackTransaction transaction = inventory.getCombinedHotbarFirst().addItemStack(itemStack);
-            return transaction.getRemainder();
-        }
-    }
-
-    /**
-     * Gets the appropriate item container by section name
-     */
-    private ItemContainer getContainerBySection(@Nonnull Inventory inventory, @Nonnull String section) {
-        return switch (section.toLowerCase()) {
-            case "hotbar" -> inventory.getHotbar();
-            case "storage" -> inventory.getStorage();
-            case "armor" -> inventory.getArmor();
-            case "utility" -> inventory.getUtility();
-            case "tools" -> inventory.getTools();
-            default -> null;
-        };
     }
 
     /**

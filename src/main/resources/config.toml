@@ -175,3 +175,12 @@ leave-message = "&8[&c-&8] &7%player%"
 
 # Placeholders: %player% = player name
 # Color codes: &0-&9, &a-&f (hex colors like &#FF5555 also supported)
+
+[starter-kit]
+# Give new players a kit when they first join
+enabled = true
+
+# Name of the kit to give (must match a kit name in kits.toml exactly)
+# This kit will not appear in the /kit menu and cannot be obtained any other way
+# The player must have the essentials.kit.<kitname> permission to receive the starter kit
+kit = "starter"

@@ -39,6 +39,7 @@ import com.nhulston.essentials.events.SpawnRegionTitleEvent;
 import com.nhulston.essentials.events.SpawnTeleportEvent;
 import com.nhulston.essentials.events.TeleportMovementEvent;
 import com.nhulston.essentials.events.SleepPercentageEvent;
+import com.nhulston.essentials.events.StarterKitEvent;
 import com.nhulston.essentials.events.UpdateNotifyEvent;
 import com.nhulston.essentials.managers.BackManager;
 import com.nhulston.essentials.managers.ChatManager;
@@ -152,7 +153,7 @@ public class Essentials extends JavaPlugin {
         getCommandRegistry().registerCommand(new TpacceptCommand(tpaManager, teleportManager, backManager));
 
         // Kit command
-        getCommandRegistry().registerCommand(new KitCommand(kitManager));
+        getCommandRegistry().registerCommand(new KitCommand(kitManager, configManager));
 
         // Back command
         getCommandRegistry().registerCommand(new BackCommand(backManager, teleportManager));
@@ -219,6 +220,9 @@ public class Essentials extends JavaPlugin {
 
         // Update notification for admins
         new UpdateNotifyEvent(versionChecker).register(getEventRegistry());
+
+        // Starter kit for new players
+        new StarterKitEvent(kitManager, configManager, storageManager).register(getEventRegistry());
 
         // Sleep percentage system
         new SleepPercentageEvent(configManager).register(getEntityStoreRegistry());

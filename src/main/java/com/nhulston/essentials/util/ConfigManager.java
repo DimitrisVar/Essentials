@@ -90,6 +90,10 @@ public class ConfigManager {
     // Rules settings
     private volatile String rulesMessage = "&6=== Server Rules ===\n&e1. &fBe respectful to all players\n&e2. &fNo griefing or stealing\n&e3. &fNo hacking or cheating\n&e4. &fHave fun!";
 
+    // Starter kit settings
+    private volatile boolean starterKitEnabled = false;
+    private volatile String starterKitName = "";
+
     public ConfigManager(@Nonnull Path dataFolder) {
         this.configPath = dataFolder.resolve("config.toml");
         load();
@@ -209,6 +213,10 @@ public class ConfigManager {
             
             // Rules config
             rulesMessage = config.getString("rules.message", () -> "&6=== Server Rules ===\n&e1. &fBe respectful to all players\n&e2. &fNo griefing or stealing\n&e3. &fNo hacking or cheating\n&e4. &fHave fun!");
+
+            // Starter kit config
+            starterKitEnabled = config.getBoolean("starter-kit.enabled", () -> false);
+            starterKitName = config.getString("starter-kit.kit", () -> "");
 
             Log.info("Config loaded!");
         } catch (Exception e) {
@@ -400,5 +408,14 @@ public class ConfigManager {
     @Nonnull
     public String getRulesMessage() {
         return rulesMessage;
+    }
+
+    public boolean isStarterKitEnabled() {
+        return starterKitEnabled;
+    }
+
+    @Nonnull
+    public String getStarterKitName() {
+        return starterKitName;
     }
 }

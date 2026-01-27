@@ -11,6 +11,7 @@ import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.gui.KitPage;
 import com.nhulston.essentials.managers.KitManager;
+import com.nhulston.essentials.util.ConfigManager;
 import com.nhulston.essentials.util.MessageManager;
 import com.nhulston.essentials.util.Msg;
 
@@ -24,12 +25,14 @@ import javax.annotation.Nonnull;
  */
 public class KitCommand extends AbstractPlayerCommand {
     private final KitManager kitManager;
+    private final ConfigManager configManager;
     private final MessageManager messages;
 
-    public KitCommand(@Nonnull KitManager kitManager) {
+    public KitCommand(@Nonnull KitManager kitManager, @Nonnull ConfigManager configManager) {
         super("kit", "Open the kit selection menu");
         this.addAliases("kits");
         this.kitManager = kitManager;
+        this.configManager = configManager;
         this.messages = Essentials.getInstance().getMessageManager();
 
         requirePermission("essentials.kit");
@@ -50,7 +53,7 @@ public class KitCommand extends AbstractPlayerCommand {
         }
 
         // Create and open the kit selection page
-        KitPage kitPage = new KitPage(playerRef, kitManager);
+        KitPage kitPage = new KitPage(playerRef, kitManager, configManager);
         player.getPageManager().openCustomPage(ref, store, kitPage);
     }
 }
