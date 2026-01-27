@@ -17,12 +17,12 @@ import javax.annotation.Nonnull;
  * Broadcasts join and leave messages to all players.
  * Differentiates between first-time joins and returning players.
  */
-public class JoinLeaveMessageEvent {
+public class JoinLeaveEvent {
     private final ConfigManager configManager;
     private final StorageManager storageManager;
 
-    public JoinLeaveMessageEvent(@Nonnull ConfigManager configManager, 
-                                 @Nonnull StorageManager storageManager) {
+    public JoinLeaveEvent(@Nonnull ConfigManager configManager,
+                          @Nonnull StorageManager storageManager) {
         this.configManager = configManager;
         this.storageManager = storageManager;
     }
@@ -35,12 +35,16 @@ public class JoinLeaveMessageEvent {
 
         // Join messages - PlayerConnectEvent fires when player first connects
         eventRegistry.registerGlobal(PlayerConnectEvent.class, event -> {
+            PlayerRef playerRef = event.getPlayerRef();
+            String playerName = playerRef.getUsername();
+            
+            // Register username -> UUID mapping for offline player lookups
+            storageManager.registerPlayer(playerName, playerRef.getUuid());
+            
             if (!configManager.isJoinMessageEnabled()) {
                 return;
             }
 
-            PlayerRef playerRef = event.getPlayerRef();
-            String playerName = playerRef.getUsername();
             boolean isFirstJoin = !storageManager.hasPlayerJoined(playerRef.getUuid());
 
             // Choose appropriate message

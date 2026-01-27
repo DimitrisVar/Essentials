@@ -17,6 +17,7 @@ Essentials is an all-in-one utility plugin for Hytale server administrators.
 *   Sleep percentage
 *   Private messaging
 *   Custom join/leave messages (removes ugly default join/leave messages)
+*   Starter kits for new players 
 *   Other useful commands: /list, /heal, /freecam, /god, /tphere, /top
 
 ![Homes](https://raw.githubusercontent.com/nhulston/Essentials/refs/heads/main/images/homes.png) ![TPA](https://raw.githubusercontent.com/nhulston/Essentials/refs/heads/main/images/tpa.png) ![Warps](https://raw.githubusercontent.com/nhulston/Essentials/refs/heads/main/images/warps.png)
