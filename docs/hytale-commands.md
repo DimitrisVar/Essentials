@@ -4,6 +4,8 @@
 
 This guide covers how to implement commands in Hytale, including arguments (required and optional), permissions, player targeting, subcommands, and common patterns. Every concept includes working code examples from the Essentials plugin.
 
+**Important Note:** Hytale's command system does not support `OptionalArg` - instead, use **Usage Variants** to implement optional arguments (see sections 3 and 7).
+
 ## Table of Contents
 
 1. [Base Command Classes](#base-command-classes)
@@ -178,51 +180,79 @@ public class KitCreateCommand extends AbstractPlayerCommand {
 
 ## Optional Arguments
 
-Optional arguments provide defaults or alternative behavior when not specified.
+**Important Note:** Hytale's command system does not have a working `OptionalArg` type. To implement optional arguments, you must use **Usage Variants** (see the [Usage Variants](#usage-variants) section below). Usage variants allow you to define a base command with no arguments and a variant with required arguments.
 
-### Basic Optional Argument
+### Pattern for Optional Arguments (Using Usage Variants)
+
+To implement commands with optional arguments, create a base command for the no-argument case and add a usage variant for the with-argument case.
 
 **Example: TpacceptCommand** - Accept teleport request
 
 ```java
 public class TpacceptCommand extends AbstractPlayerCommand {
-    private final OptionalArg<String> playerArg;
     private final TpaManager tpaManager;
+    private final TeleportManager teleportManager;
+    private final BackManager backManager;
 
-    public TpacceptCommand(@Nonnull TpaManager tpaManager) {
+    public TpacceptCommand(@Nonnull TpaManager tpaManager, @Nonnull TeleportManager teleportManager,
+                          @Nonnull BackManager backManager) {
         super("tpaccept", "Accept a teleport request");
         this.tpaManager = tpaManager;
-        this.playerArg = withOptionalArg("player", "Player whose request to accept", ArgTypes.STRING);
+        this.teleportManager = teleportManager;
+        this.backManager = backManager;
         addAliases("tpyes");
         requirePermission("essentials.tpaccept");
+        
+        // Add usage variant for accepting specific player's request
+        addUsageVariant(new TpacceptNamedCommand(tpaManager, teleportManager, backManager));
     }
 
     @Override
     protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store,
                            @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
-        String requesterName = context.get(playerArg);
-        
-        TeleportRequest request;
-        
-        // If no player specified, accept most recent request
-        if (requesterName == null) {
-            request = tpaManager.acceptMostRecentRequest(playerRef);
-            if (request == null) {
-                Msg.send(context, "You have no pending teleport requests.");
-                return;
-            }
-        } else {
+        // /tpaccept with no arguments - accept most recent request
+        TpaRequest request = tpaManager.acceptMostRecentRequest(playerRef);
+        if (request == null) {
+            Msg.send(context, "You have no pending teleport requests.");
+            return;
+        }
+
+        // Process the accepted request
+        teleportManager.teleport(request.getRequester(), playerRef);
+        Msg.send(context, "Accepted teleport request from " + request.getRequester().getUsername());
+    }
+
+    // Usage variant for /tpaccept <player>
+    private static class TpacceptNamedCommand extends AbstractPlayerCommand {
+        private final RequiredArg<String> playerArg;
+        private final TpaManager tpaManager;
+        private final TeleportManager teleportManager;
+
+        TpacceptNamedCommand(@Nonnull TpaManager tpaManager, @Nonnull TeleportManager teleportManager,
+                            @Nonnull BackManager backManager) {
+            super("Accept a teleport request from a specific player");
+            this.tpaManager = tpaManager;
+            this.teleportManager = teleportManager;
+            this.playerArg = withRequiredArg("player", "Player whose request to accept", ArgTypes.STRING);
+        }
+
+        @Override
+        protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store,
+                               @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
+            // /tpaccept <player>
+            String requesterName = context.get(playerArg);
+            
             // Accept request from specific player
-            request = tpaManager.acceptRequest(playerRef, requesterName);
+            TpaRequest request = tpaManager.acceptRequest(playerRef, requesterName);
             if (request == null) {
                 Msg.send(context, "No teleport request from " + requesterName);
                 return;
             }
-        }
 
-        // Process the accepted request
-        teleportManager.teleport(request.getRequester(), playerRef.getLocation());
-        Msg.send(context, "Accepted teleport request from " + request.getRequester().getUsername());
+            // Process the accepted request
+            teleportManager.teleport(request.getRequester(), playerRef);
+            Msg.send(context, "Accepted teleport request from " + requesterName);
+        }
     }
 }
 ```
@@ -231,71 +261,12 @@ public class TpacceptCommand extends AbstractPlayerCommand {
 - `/tpaccept` - Accepts most recent request
 - `/tpaccept PlayerName` - Accepts request from specific player
 
-### Optional Argument with Fallback Logic
-
-**Example: HomeCommand** - Teleport to home
-
-```java
-public class HomeCommand extends AbstractPlayerCommand {
-    private final OptionalArg<String> nameArg;
-
-    public HomeCommand(@Nonnull HomeManager homeManager) {
-        super("home", "Teleport to your home");
-        this.nameArg = withOptionalArg("name", "Home name", ArgTypes.STRING);
-        addAliases("homes");
-        requirePermission("essentials.home");
-    }
-
-    @Override
-    protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store,
-                           @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
-        String homeName = context.get(nameArg);
-        
-        List<Home> homes = homeManager.getHomes(playerRef.getUuid());
-        
-        if (homes.isEmpty()) {
-            Msg.send(context, "You have no homes set. Use /sethome <name> to create one.");
-            return;
-        }
-
-        Home targetHome;
-        
-        // If no name provided, use default home logic
-        if (homeName == null) {
-            if (homes.size() == 1) {
-                // If only one home, teleport to it
-                targetHome = homes.get(0);
-            } else {
-                // If multiple homes, show list
-                Msg.send(context, "Your homes: " + String.join(", ", getHomeNames(homes)));
-                Msg.send(context, "Use /home <name> to teleport to a specific home");
-                return;
-            }
-        } else {
-            // Find home by name
-            targetHome = homeManager.getHome(playerRef.getUuid(), homeName);
-            if (targetHome == null) {
-                Msg.send(context, "Home '" + homeName + "' not found.");
-                return;
-            }
-        }
-
-        // Teleport to the home
-        teleportManager.teleport(playerRef, targetHome.getLocation());
-        Msg.send(context, "Teleported to home: " + targetHome.getName());
-    }
-}
-```
-
-**Usage:**
-- `/home` - Lists homes or teleports to the only home
-- `/home mybase` - Teleports to specific home
-
 **Key Pattern:**
-1. Declare `OptionalArg<T>` field
-2. Initialize with `withOptionalArg(name, description, type)`
-3. Check if value is `null` to determine if provided
-4. Implement fallback logic for null case
+1. Create a base command class for the no-argument case
+2. Create an inner class extending `AbstractPlayerCommand` for the with-argument case
+3. In the inner class, use `RequiredArg<T>` for the argument
+4. Register the variant with `addUsageVariant(new VariantCommand(...))` in the base constructor
+5. The command system will automatically route to the appropriate variant based on arguments provided
 
 ---
 
@@ -698,7 +669,9 @@ public class KitDeleteCommand extends AbstractPlayerCommand {
 
 ## Usage Variants
 
-Usage variants are an alternative to subcommands for handling different argument patterns of the same logical command.
+Usage variants are the correct way to implement optional arguments in Hytale's command system. They allow you to handle different argument patterns for the same logical command.
+
+**Note:** This is the pattern you should use for implementing optional arguments, as `OptionalArg` does not work in Hytale. See the [Optional Arguments](#optional-arguments) section for more details.
 
 ### Usage Variant Pattern
 
@@ -781,8 +754,14 @@ public class HomeCommand extends AbstractPlayerCommand {
 - `/home mybase` - Teleports to specific home
 
 **When to use variants vs subcommands:**
-- **Variants**: Same logical action, different argument patterns (`/home`, `/home name`)
+- **Variants**: Same logical action, different argument patterns (`/home`, `/home name`) - **Use this for optional arguments**
 - **Subcommands**: Different actions under same command (`/kit`, `/kit create`, `/kit delete`)
+
+**Key Points:**
+1. Usage variants are how you implement optional arguments in Hytale
+2. The base command handles the no-argument case
+3. The variant command handles the with-argument case using `RequiredArg`
+4. The command system automatically routes to the correct variant based on input
 
 ---
 
