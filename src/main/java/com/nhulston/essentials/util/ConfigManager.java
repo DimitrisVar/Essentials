@@ -37,6 +37,10 @@ public class ConfigManager {
 
     // Build settings
     private volatile boolean disableBuilding = false;
+    private volatile List<String> creativeOnlyWorlds = List.of();
+
+    // Item pickup settings
+    private volatile List<String> itemPickupBlockedWorlds = List.of();
 
     // Spawn settings
     private volatile boolean firstJoinSpawnEnabled = true;
@@ -156,6 +160,10 @@ public class ConfigManager {
 
             // Build config
             disableBuilding = config.getBoolean("build.disable-building", () -> false);
+            creativeOnlyWorlds = loadStringList(config, "build.creative-only-worlds");
+
+            // Item pickup config
+            itemPickupBlockedWorlds = loadStringList(config, "item-pickup.blocked-worlds");
 
             // Spawn config
             firstJoinSpawnEnabled = config.getBoolean("spawn.first-join", () -> true);
@@ -275,6 +283,30 @@ public class ConfigManager {
     }
 
     /**
+     * Loads a list of strings from a TOML array.
+     */
+    @Nonnull
+    private List<String> loadStringList(@Nonnull TomlParseResult config, @Nonnull String key) {
+        try {
+            org.tomlj.TomlArray array = config.getArray(key);
+            if (array == null) {
+                return List.of();
+            }
+            List<String> result = new ArrayList<>();
+            for (int i = 0; i < array.size(); i++) {
+                String value = array.getString(i);
+                if (value != null) {
+                    result.add(value);
+                }
+            }
+            return List.copyOf(result);
+        } catch (Exception e) {
+            Log.warning("Failed to load string list from config key '" + key + "': " + e.getMessage());
+            return List.of();
+        }
+    }
+
+    /**
      * Gets the home limits map (tier name -> limit).
      */
     @Nonnull
@@ -298,6 +330,16 @@ public class ConfigManager {
 
     public boolean isBuildingDisabled() {
         return disableBuilding;
+    }
+
+    @Nonnull
+    public List<String> getCreativeOnlyWorlds() {
+        return creativeOnlyWorlds;
+    }
+
+    @Nonnull
+    public List<String> getItemPickupBlockedWorlds() {
+        return itemPickupBlockedWorlds;
     }
 
     public boolean isFirstJoinSpawnEnabled() {

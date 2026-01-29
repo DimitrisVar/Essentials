@@ -44,6 +44,7 @@ teleported-by = "&eYou have been teleported to spawn by {sender}."
 console-requires-player = "&cConsole must specify a player: /spawn <player>"
 player-not-found = "&cPlayer not found."
 blocked-creative = "&cYou cannot use /spawn while in Creative mode!"
+blocked-creative-items = "&cYou cannot use /spawn while you have items from Creative mode in your inventory! Remove them first."
 
 [commands.setspawn]
 success = "&aSpawn set!"
@@ -169,6 +170,9 @@ disabled = "&cFreecam disabled."
 [commands.heal]
 success = "&aYou have been healed."
 stats-error = "&cCould not access your stats."
+
+[commands.gamemode]
+blocked-creative-items = "&cYou cannot switch out of Creative mode while you have Creative items in your inventory! Remove them first."
 
 [teleport]
 already-pending = "&cYou already have a pending teleport. Please wait."

@@ -14,6 +14,7 @@ import com.hypixel.hytale.server.core.universe.world.World;
 import com.hypixel.hytale.server.core.universe.world.storage.EntityStore;
 import com.nhulston.essentials.Essentials;
 import com.nhulston.essentials.managers.BackManager;
+import com.nhulston.essentials.managers.CreativeItemTracker;
 import com.nhulston.essentials.managers.SpawnManager;
 import com.nhulston.essentials.managers.TeleportManager;
 import com.nhulston.essentials.models.Spawn;
@@ -35,14 +36,16 @@ public class SpawnCommand extends AbstractPlayerCommand {
     private final SpawnManager spawnManager;
     private final TeleportManager teleportManager;
     private final BackManager backManager;
+    private final CreativeItemTracker creativeItemTracker;
     private final MessageManager messages;
 
     public SpawnCommand(@Nonnull SpawnManager spawnManager, @Nonnull TeleportManager teleportManager,
-                       @Nonnull BackManager backManager) {
+                       @Nonnull BackManager backManager, @Nonnull CreativeItemTracker creativeItemTracker) {
         super("spawn", "Teleport to the server spawn");
         this.spawnManager = spawnManager;
         this.teleportManager = teleportManager;
         this.backManager = backManager;
+        this.creativeItemTracker = creativeItemTracker;
         this.messages = Essentials.getInstance().getMessageManager();
 
         addAliases("s");
@@ -55,6 +58,21 @@ public class SpawnCommand extends AbstractPlayerCommand {
     @Override
     protected void execute(@Nonnull CommandContext context, @Nonnull Store<EntityStore> store,
                            @Nonnull Ref<EntityStore> ref, @Nonnull PlayerRef playerRef, @Nonnull World world) {
+        // Check if player has bypass permission
+        boolean hasBypass = com.hypixel.hytale.server.core.permissions.PermissionsModule.get()
+                .hasPermission(playerRef.getUuid(), "essentials.spawn.creative.bypass");
+
+        if (!hasBypass) {
+            // Check if player has Creative mode items in inventory
+            boolean hasCreativeItems = creativeItemTracker.hasCreativeItems(playerRef.getUuid(), store, ref);
+
+            if (hasCreativeItems) {
+                Msg.send(context, messages.get("commands.spawn.blocked-creative-items"));
+                com.nhulston.essentials.util.Log.info("BLOCKED spawn command for player with Creative mode items");
+                return;
+            }
+        }
+
         // Check if creative mode spawn blocking is enabled
         ConfigManager configManager = Essentials.getInstance().getConfigManager();
 
@@ -62,10 +80,6 @@ public class SpawnCommand extends AbstractPlayerCommand {
             (configManager != null && configManager.isCreativeModeSpawnBlockEnabled()));
 
         if (configManager != null && configManager.isCreativeModeSpawnBlockEnabled()) {
-            // Check if player has bypass permission
-            boolean hasBypass = com.hypixel.hytale.server.core.permissions.PermissionsModule.get()
-                    .hasPermission(playerRef.getUuid(), "essentials.spawn.creative.bypass");
-
             com.nhulston.essentials.util.Log.info("Player has bypass permission: " + hasBypass);
 
             if (!hasBypass) {

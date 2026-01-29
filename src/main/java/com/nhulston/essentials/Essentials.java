@@ -31,7 +31,10 @@ import com.nhulston.essentials.commands.warp.SetWarpCommand;
 import com.nhulston.essentials.commands.warp.WarpCommand;
 import com.nhulston.essentials.events.BuildProtectionEvent;
 import com.nhulston.essentials.events.ChatEvent;
+import com.nhulston.essentials.events.CreativeOnlyBreakingEvent;
 import com.nhulston.essentials.events.DeathLocationEvent;
+import com.nhulston.essentials.events.GameModeChangeEvent;
+import com.nhulston.essentials.events.ItemPickupProtectionEvent;
 import com.nhulston.essentials.events.JoinLeaveEvent;
 import com.nhulston.essentials.events.MotdEvent;
 import com.nhulston.essentials.events.PlayerQuitEvent;
@@ -44,6 +47,7 @@ import com.nhulston.essentials.events.StarterKitEvent;
 import com.nhulston.essentials.events.UpdateNotifyEvent;
 import com.nhulston.essentials.managers.BackManager;
 import com.nhulston.essentials.managers.ChatManager;
+import com.nhulston.essentials.managers.CreativeItemTracker;
 import com.nhulston.essentials.managers.HomeManager;
 import com.nhulston.essentials.managers.KitManager;
 import com.nhulston.essentials.managers.SpawnManager;
@@ -75,6 +79,7 @@ public class Essentials extends JavaPlugin {
     private TeleportManager teleportManager;
     private KitManager kitManager;
     private BackManager backManager;
+    private CreativeItemTracker creativeItemTracker;
     private VersionChecker versionChecker;
     private MessageManager messageManager;
 
@@ -101,6 +106,7 @@ public class Essentials extends JavaPlugin {
         teleportManager = new TeleportManager(configManager);
         kitManager = new KitManager(getDataDirectory(), storageManager);
         backManager = new BackManager();
+        creativeItemTracker = new CreativeItemTracker();
         versionChecker = new VersionChecker(VERSION);
     }
 
@@ -147,7 +153,7 @@ public class Essentials extends JavaPlugin {
 
         // Spawn commands
         getCommandRegistry().registerCommand(new SetSpawnCommand(spawnManager));
-        getCommandRegistry().registerCommand(new SpawnCommand(spawnManager, teleportManager, backManager));
+        getCommandRegistry().registerCommand(new SpawnCommand(spawnManager, teleportManager, backManager, creativeItemTracker));
 
         // TPA commands
         getCommandRegistry().registerCommand(new TpaCommand(tpaManager));
@@ -205,9 +211,12 @@ public class Essentials extends JavaPlugin {
     private void registerEvents() {
         new ChatEvent(chatManager).register(getEventRegistry());
         new BuildProtectionEvent(configManager).register(getEntityStoreRegistry());
+        new CreativeOnlyBreakingEvent(configManager).register(getEntityStoreRegistry());
+        new ItemPickupProtectionEvent(configManager).register(getEntityStoreRegistry());
         new SpawnProtectionEvent(spawnProtectionManager).register(getEntityStoreRegistry());
         new SpawnRegionTitleEvent(spawnProtectionManager, configManager).register(getEntityStoreRegistry());
         new TeleportMovementEvent(teleportManager).register(getEntityStoreRegistry());
+        new GameModeChangeEvent(creativeItemTracker).register(getEntityStoreRegistry());
 
         SpawnTeleportEvent spawnTeleportEvent = new SpawnTeleportEvent(spawnManager, configManager, storageManager);
         spawnTeleportEvent.registerEvents(getEventRegistry());
@@ -232,7 +241,7 @@ public class Essentials extends JavaPlugin {
         new SleepPercentageEvent(configManager, messageManager).register(getEntityStoreRegistry());
 
         // Player disconnect cleanup
-        new PlayerQuitEvent(storageManager, tpaManager, teleportManager, backManager).register(getEventRegistry());
+        new PlayerQuitEvent(storageManager, tpaManager, teleportManager, backManager, creativeItemTracker).register(getEventRegistry());
 
         // Sync spawn provider with world config after all worlds are loaded
         // This updates the spawn marker on the map

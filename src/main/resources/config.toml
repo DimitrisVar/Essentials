@@ -41,6 +41,17 @@ Default = "&0[&fPlayer&0] &f%player%: %message%"
 # Players with essentials.build.bypass permission can still build
 disable-building = false
 
+# Require Creative mode to break blocks in specific worlds
+# Players with essentials.build.bypass permission can bypass this
+# Leave empty [] to allow breaking in any gamemode in all worlds
+creative-only-worlds = []
+
+[item-pickup]
+# Disable item pickup in specific worlds
+# Players with essentials.pickup.bypass permission can still pick up items
+# Leave empty [] to allow pickup in all worlds
+blocked-worlds = []
+
 [teleport]
 # Delay (in seconds) before teleporting. Set to 0 to disable.
 # Players must stand still during the delay or the teleport is canceled.
